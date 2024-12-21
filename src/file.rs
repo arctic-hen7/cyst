@@ -81,13 +81,13 @@ pub fn decrypt_file(
             input.read(&mut buffer)?;
             let decrypted = decryptor
                 .decrypt_next(buffer.as_ref())
-                .map_err(|_| anyhow!("encryption failed"))?;
+                .map_err(|_| anyhow!("decryption failed"))?;
             output.write_all(&decrypted)?;
         } else {
             let read = input.read(&mut buffer)?;
             let decrypted = decryptor
                 .decrypt_last(&buffer[..read])
-                .map_err(|_| anyhow!("encryption failed"))?;
+                .map_err(|_| anyhow!("decryption failed"))?;
             output.write_all(&decrypted)?;
 
             break;
