@@ -22,10 +22,10 @@ pub trait Factor {
     fn name() -> &'static str;
     /// Creates an instance of this factor by prompting the user, returning the data we'll need to
     /// derive this factor in future and a key.
-    fn create() -> (Self::Data, Self::Key);
+    fn create() -> Result<(Self::Data, Self::Key)>;
     /// Derives this factor from the data it was created with. This should prompt the user as
     /// necessary to derive the same key as it originally created.
-    fn derive(data: Self::Data) -> Self::Key;
+    fn derive(data: Self::Data) -> Result<Self::Key>;
 }
 
 /// A type-erased version of [`Factor`] that returns raw serialised data and keys.
@@ -40,7 +40,7 @@ impl<F: Factor> BoxedFactor for F {
     }
 
     fn create(&self) -> Result<(Vec<u8>, Vec<u8>)> {
-        let (data, key) = F::create();
+        let (data, key) = F::create()?;
         let data_bytes = bincode::serialize(&data)?;
         let key_bytes = key.as_ref().to_vec();
         Ok((data_bytes, key_bytes))
@@ -48,7 +48,7 @@ impl<F: Factor> BoxedFactor for F {
 
     fn derive(&self, data_bytes: &[u8]) -> Result<Vec<u8>> {
         let data: F::Data = bincode::deserialize(data_bytes)?;
-        Ok(F::derive(data).as_ref().to_vec())
+        Ok(F::derive(data)?.as_ref().to_vec())
     }
 }
 
