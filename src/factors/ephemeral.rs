@@ -23,12 +23,12 @@ impl Factor for EphemeralFactor {
             .unwrap();
         // Upload it to a temporary file hosting service (disabling short URL generation to prevent
         // brute-forcing)
-        println!("Uploading ephemeral data to the cloud...");
+        eprintln!("Uploading ephemeral data to the cloud...");
         let resp = ureq::put(&format!("https://oshi.at/?expire={expiry}&shorturl=0"))
             .set("Content-Type", "application/octet-stream")
             .send_bytes(&data)?;
         if resp.status() == 200 {
-            println!("Upload successful!");
+            eprintln!("Upload successful!");
             let resp_str = resp.into_string()?;
             let lines = resp_str
                 .lines()
@@ -54,10 +54,10 @@ impl Factor for EphemeralFactor {
     }
     fn derive(data: Self::Data) -> Result<Self::Key> {
         // Download the file
-        println!("Downloading ephemeral data from the cloud...");
+        eprintln!("Downloading ephemeral data from the cloud...");
         let resp = ureq::get(&data.url).call()?;
         if resp.status() == 200 {
-            println!("Download successful!");
+            eprintln!("Download successful!");
             let mut data = [0u8; 32];
             resp.into_reader().read_exact(&mut data)?;
             Ok(data)

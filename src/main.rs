@@ -16,17 +16,21 @@ fn main() -> Result<()> {
     match opts.command {
         Command::Encrypt { input, output } => {
             let (header, encryptor) = Header::new(&factors)?;
-            encrypt_file(&input, &output, header, encryptor)?;
+            encrypt_file(&input, output.as_deref(), header, encryptor)?;
 
-            println!("Encryption successful! Output written to {output:?}.");
+            if let Some(output) = output {
+                eprintln!("Encryption successful! Output written to {output:?}.");
+            }
         }
         Command::Decrypt { input, output } => {
             let mut input = File::open(&input)?;
             let header = Header::from_file(&mut input)?;
             let decryptor = header.to_decryptor(&factors)?;
-            decrypt_file(&mut input, &output, decryptor)?;
+            decrypt_file(&mut input, output.as_deref(), decryptor)?;
 
-            println!("Decryption successful! Output written to {output:?}.");
+            if let Some(output) = output {
+                eprintln!("Decryption successful! Output written to {output:?}.");
+            }
         }
     }
 
@@ -46,12 +50,12 @@ enum Command {
     Encrypt {
         input: PathBuf,
         #[arg(short, long)]
-        output: PathBuf,
+        output: Option<PathBuf>,
     },
     /// Decrypt a previously encrypted file
     Decrypt {
         input: PathBuf,
         #[arg(short, long)]
-        output: PathBuf,
+        output: Option<PathBuf>,
     },
 }

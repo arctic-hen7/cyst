@@ -17,11 +17,15 @@ const BUF_SIZE: u64 = 4096;
 /// output path. The provided header will be written as well.
 pub fn encrypt_file(
     input_path: &Path,
-    output_path: &Path,
+    output_path: Option<&Path>,
     header: Header,
     mut encryptor: EncryptorBE32<ChaCha20Poly1305>,
 ) -> Result<()> {
-    let mut output = File::create(output_path)?;
+    let mut output: Box<dyn Write> = if let Some(output_path) = output_path {
+        Box::new(File::create(output_path)?)
+    } else {
+        Box::new(std::io::stdout().lock())
+    };
     // Write the header immediately
     output.write_all(&header.to_bytes())?;
 
@@ -57,10 +61,14 @@ pub fn encrypt_file(
 /// will be at the start of the ciphertext (after the header).
 pub fn decrypt_file(
     input: &mut File,
-    output_path: &Path,
+    output_path: Option<&Path>,
     mut decryptor: DecryptorBE32<ChaCha20Poly1305>,
 ) -> Result<()> {
-    let mut output = File::create(output_path)?;
+    let mut output: Box<dyn Write> = if let Some(output_path) = output_path {
+        Box::new(File::create(output_path)?)
+    } else {
+        Box::new(std::io::stdout().lock())
+    };
 
     // Decrypt chunks of the input file and write them directly to the output file
     let input_size = input.metadata()?.len();

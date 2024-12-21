@@ -77,7 +77,7 @@ impl Header {
         // Prompt the user for each factor in the option
         let mut total_key = Vec::new();
         for (factor_name, factor_data) in &option_data.factors {
-            println!("Please follow the prompts for factor '{}':", factor_name);
+            eprintln!("Please follow the prompts for factor '{}':", factor_name);
             let factor = &registry
                 .get(factor_name.as_str())
                 .ok_or(anyhow!("unknown factor '{factor_name}'"))?;
