@@ -10,8 +10,11 @@ use std::{
     path::Path,
 };
 
-/// The size of buffer used for streaming encryption and decryption.
-const BUF_SIZE: u64 = 4096;
+/// The size of buffer used for streaming encryption.
+const ENCRYPTION_BUF_SIZE: u64 = 4096;
+/// The size of the buffer used for streaming decryption. This needs to be 16 bytes larger to
+/// account for the overhead of the STREAM protocol.
+const DECRYPTION_BUF_SIZE: u64 = ENCRYPTION_BUF_SIZE + 16;
 
 /// Encrypts the given path, writing the data encrypted with the given stream encryptor to the
 /// output path. The provided header will be written as well.
@@ -32,12 +35,12 @@ pub fn encrypt_file(
     // Encrypt chunks of the input file and write them directly to the output file
     let mut input = File::open(input_path)?;
     let input_size = input.metadata()?.len();
-    let mut buffer = [0; BUF_SIZE as usize];
+    let mut buffer = [0; ENCRYPTION_BUF_SIZE as usize];
     loop {
         // If we have more bytes left than the buffer size, we aren't at the last chunk (handled
         // specially by the algorithm)
         let bytes_left = input_size - input.stream_position()?;
-        if bytes_left > BUF_SIZE {
+        if bytes_left > ENCRYPTION_BUF_SIZE {
             input.read(&mut buffer)?;
             let encrypted = encryptor
                 .encrypt_next(buffer.as_ref())
@@ -47,7 +50,7 @@ pub fn encrypt_file(
             let read = input.read(&mut buffer)?;
             let encrypted = encryptor
                 .encrypt_last(&buffer[..read])
-                .map_err(|_| anyhow!("encryption failed"))?;
+                .map_err(|_| anyhow!("last encryption failed"))?;
             output.write_all(&encrypted)?;
 
             break;
@@ -72,12 +75,12 @@ pub fn decrypt_file(
 
     // Decrypt chunks of the input file and write them directly to the output file
     let input_size = input.metadata()?.len();
-    let mut buffer = [0; BUF_SIZE as usize];
+    let mut buffer = [0; DECRYPTION_BUF_SIZE as usize];
     loop {
         // If we have more bytes left than the buffer size, we aren't at the last chunk (handled
         // specially by the algorithm)
         let bytes_left = input_size - input.stream_position()?;
-        if bytes_left > BUF_SIZE {
+        if bytes_left > DECRYPTION_BUF_SIZE {
             input.read(&mut buffer)?;
             let decrypted = decryptor
                 .decrypt_next(buffer.as_ref())
@@ -87,7 +90,7 @@ pub fn decrypt_file(
             let read = input.read(&mut buffer)?;
             let decrypted = decryptor
                 .decrypt_last(&buffer[..read])
-                .map_err(|_| anyhow!("decryption failed"))?;
+                .map_err(|_| anyhow!("last decryption failed"))?;
             output.write_all(&decrypted)?;
 
             break;
